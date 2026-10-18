@@ -12,7 +12,7 @@ function getPusher(){
 function sign(v){return crypto.createHmac('sha256',process.env.PUSHER_SECRET).update(v).digest('base64url')}
 function issue(room,id){const v=Buffer.from(JSON.stringify({room,id,exp:Date.now()+6*3600000})).toString('base64url');return `${v}.${sign(v)}`}
 function verify(token){if(typeof token!=='string'||token.length>800)return null;const [v,s]=token.split('.');if(!v||!s||sign(v).length!==s.length||!crypto.timingSafeEqual(Buffer.from(sign(v)),Buffer.from(s)))return null;try{const data=JSON.parse(Buffer.from(v,'base64url').toString());return validRoom(data.room)&&typeof data.id==='string'&&data.id.length<90&&data.exp>Date.now()?data:null}catch{return null}}
-async function count(room){try{const response=await getPusher().get({path:`/channels/${channel(room)}`,params:{info:'subscription_count'}});const obj=await response.json();return Number(obj.subscription_count)||0}catch(e){if(e.status===404||e.statusCode===404)return 0;throw e}}
+async function count(room){try{const response=await getPusher().get({path:`/channels/${channel(room)}`});const obj=await response.json();return obj&&obj.occupied?1:0}catch(e){if(e.status===404||e.statusCode===404)return 0;throw e}}
 const error=(res,status,message)=>res.status(status).json({error:message});
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
